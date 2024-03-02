@@ -1,13 +1,17 @@
 package kr.co.sist.statement.service;
 
 import javax.swing.JOptionPane;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 
 import kr.co.sist.statement.dao.StatementDAO;
 import kr.co.sist.statement.vo.EmployeeVO;
 
 import static java.lang.Integer.parseInt;
 
+import java.sql.Date;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 
 import static java.lang.Double.parseDouble;
 
@@ -59,7 +63,7 @@ public class RunStatementDAO {
 					}	// end case
 					JOptionPane.showMessageDialog(null, errMsg);
 				}	// end catch
-			} catch (NumberFormatException efn) {
+			} catch (NumberFormatException nfe) {
 				JOptionPane.showMessageDialog(null, "사원번호나 연봉은 숫자형식이어야 합니다.");
 			}	// end catch
 		}	// end if
@@ -69,7 +73,60 @@ public class RunStatementDAO {
 	 * update ~ set ~ from 
 	 */
 	public void modifyEmp() {
+		String inputData = JOptionPane.showInputDialog("사원정보 변경\n사원번호와 변경할 정보의 분류, 내용을 입력해주세요."
+				+ "\n사원명 변경 : 사원번호,'사원명',변경할 사원명 입력"
+				+ "\n직무 변경 : 사원번호,'직무', 변경할 직무 입력"
+				+ "\n연봉 변경 : 사원번호, '연봉', 변경할 연봉 입력"
+				+ "\n입사일 변경 : 사원번호, '입사일', 변경할 입사일(예: 2024-03-02) 입력");
 		
+		if(inputData != null) {
+			String[] tempData = inputData.split(",");
+			
+			if(tempData.length != 3) {
+				JOptionPane.showMessageDialog(null, "입력은 사원번호,변경할 정보의 분류,내용 형식이어야 합니다.");
+			}	// end if
+			
+			try {
+				// DBMS 테이블의 update를 수행
+				int empno = parseInt(tempData[0]);
+				StatementDAO sDAO = new StatementDAO();
+				EmployeeVO eVOSelect = sDAO.selectOneEmp(empno);
+				EmployeeVO eVOInput = null;
+				
+				switch(tempData[1]) {
+				case "사원명" : eVOInput = new EmployeeVO(empno, tempData[2], eVOSelect.getJob(), eVOSelect.getSal(), eVOSelect.getHiredate()); break;
+				case "직무" : eVOInput = new EmployeeVO(empno, eVOSelect.getEname(), tempData[2], eVOSelect.getSal(), eVOSelect.getHiredate()); break;
+				case "연봉" : eVOInput = new EmployeeVO(empno, eVOSelect.getEname(), eVOSelect.getJob(), parseDouble(tempData[2]), eVOSelect.getHiredate()); break;
+				case "입사일" : 
+					if(tempData[2].split("-").length != 3) {
+						JOptionPane.showMessageDialog(null, "입사일의 형식은 '년-월-일(예: 2024-03-02)'여야합니다.");
+						return;
+					}	// end if
+					eVOInput = new EmployeeVO(empno, eVOSelect.getEname(), eVOSelect.getJob(), eVOSelect.getSal(), Date.valueOf(tempData[2])); break;
+				}	// end case 
+				
+				int cnt = sDAO.updateEmp(eVOInput);	// 0 ~ n건 변경
+				String msg = "";
+				
+				if(cnt == 0) {	// 변경되지 않았을 때 
+					msg = tempData[0] + "번 사원은 존재하지 않습니다. 사원 번호를 확인해주세요.";
+					return;
+				}	// end if
+				msg = tempData[0] + "번으로 " + cnt + "건 변경되었습니다."	;	
+				JOptionPane.showMessageDialog(null, msg);
+			} catch (NumberFormatException nfe) {
+				JOptionPane.showMessageDialog(null, "사원번호나 연봉은 숫자형식이어야 합니다.");
+			} catch (SQLException se) {
+				se.printStackTrace();
+				String errMsg = "";
+				switch(se.getErrorCode()) {
+				case 1438 : errMsg = "연봉은 정수 5자리, 실수 2자리로 입력 가능합니다."; break;
+				case 12899 : errMsg = "사원명과 직무는 한글 3자리까지만 입력 가능합니다."; break;
+				default : errMsg = "문제가 발생했습니다. 잠시 후에 다시 시도해주세요.";
+				}	// end case
+				JOptionPane.showMessageDialog(null, errMsg);
+			} // end catch
+		}	// end if
 	}	// modifyEmp
 	
 	/**
@@ -90,7 +147,42 @@ public class RunStatementDAO {
 	 * select * from ~ where
 	 */
 	public void searchOneEmp() {
+		String inputData = JOptionPane.showInputDialog("특정 사원정보 검색\n검색할 사원번호를 입력해주세요.");
 		
+		if(inputData == null) {
+			JOptionPane.showMessageDialog(null, "사원번호를 입력해주세요.");
+		}	// end if
+		
+		try {
+			int empno = parseInt(inputData);
+			
+			// DBMS에서 조회된 결과를 받아서 사용자에게 보여준다.
+			StatementDAO sDAO = new StatementDAO();
+			EmployeeVO eVO = sDAO.selectOneEmp(empno);
+			
+			StringBuilder output = new StringBuilder();
+			output.append(empno).append("번 사원번호 검색 결과\n\n");
+			if(eVO == null) {
+				JOptionPane.showMessageDialog(null, empno + "번 사원번호가 존재하지 않습니다. 사원번호를 확인해주시기 바랍니다.");
+			} else {
+				output.append("사원명 : ").append(eVO.getEname()).append("\n");
+				output.append("직무 : ").append(eVO.getJob()).append("\n");
+				output.append("연봉 : ").append(eVO.getSal()).append("\n");
+				SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+				output.append("입사일 : ").append(sdf.format(eVO.getHiredate()));
+				
+				JTextArea jta = new JTextArea(output.toString(), 7, 30);
+				jta.setEditable(false);
+				JScrollPane jsp = new JScrollPane(jta);
+				JOptionPane.showMessageDialog(null, jsp);
+			}	// end else
+			
+		} catch (NumberFormatException nfe) {
+			JOptionPane.showMessageDialog(null, "사원번호는 숫자형식으로 입력해야 합니다.");
+		} catch (SQLException se) {
+			se.printStackTrace();
+		}	// end catch
+			
 	}	// searchOneEmp
 	
 	/**
