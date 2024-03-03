@@ -1,19 +1,19 @@
 package kr.co.sist.statement.service;
 
+import static java.lang.Double.parseDouble;
+import static java.lang.Integer.parseInt;
+
+import java.sql.Date;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.List;
+
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import kr.co.sist.statement.dao.StatementDAO;
 import kr.co.sist.statement.vo.EmployeeVO;
-
-import static java.lang.Integer.parseInt;
-
-import java.sql.Date;
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-
-import static java.lang.Double.parseDouble;
 
 
 /**
@@ -133,6 +133,42 @@ public class RunStatementDAO {
 	 * delete from
 	 */
 	public void removeEmp() {
+		String inputData = JOptionPane.showInputDialog("삭제할 사원번호를 입력해주세요.");
+		
+		if(inputData == null) {
+			JOptionPane.showMessageDialog(null, "사원번호를 입력해주세요.");	
+			return;
+		}	// end if
+		
+		// DBMS의 delete를 수행
+		try {
+			int empno = parseInt(inputData);
+			StatementDAO sDAO = new StatementDAO();
+			EmployeeVO eVO = sDAO.selectOneEmp(empno);
+			
+			if(eVO == null) {
+				JOptionPane.showMessageDialog(null, empno + "번 사원은 존재하지 않습니다. 사원번호를 확인해주세요.");
+				return;
+			}	// end if
+			
+			int chkDelete = JOptionPane.showConfirmDialog(null, empno + "번 사원 : " + eVO.getEname() + "님의 사원정보를 삭제하시겠습니까?");
+			
+			switch(chkDelete) {
+			case JOptionPane.NO_OPTION :
+			case JOptionPane.CANCEL_OPTION :
+				return;
+			case JOptionPane.OK_OPTION :
+				int cnt = sDAO.deleteEmp(empno);
+				if(cnt != 0) {
+					JOptionPane.showMessageDialog(null, empno + "번으로 " + cnt + "건 삭제되었습니다.");
+				}	// end if 
+				break;
+			}	// end case
+		} catch (NumberFormatException nfe) {
+			JOptionPane.showMessageDialog(null, "사원번호는 숫자형태여야 합니다.");
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}	// end catch 
 		
 	}	// remeveEmp
 	
@@ -140,7 +176,34 @@ public class RunStatementDAO {
 	 * select * from
 	 */
 	public void searchAllEmp() {
-		
+		// DBMS에서 조회된 결과를 받아서 사용자에게 보여준다.
+		StatementDAO sDAO = new StatementDAO();
+		try {
+			List<EmployeeVO> listAllEmp = sDAO.selectAllEmp();
+			
+			StringBuilder output = new StringBuilder();
+			output.append("사원번호\t사원명\t직무\t연봉\t입사일\n");
+			
+			if(listAllEmp.isEmpty()) {
+				output.append("데이터가 없습니다.");
+			} else {
+				for(EmployeeVO eVO : listAllEmp) {
+					SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
+					output.append(eVO.getEmpno()).append("\t")
+					.append(eVO.getEname()).append("\t")
+					.append(eVO.getJob()).append("\t")
+					.append(eVO.getSal()).append("\t")
+					.append(sdf.format(eVO.getHiredate())).append("\n");
+				}	// end for
+			}	// end else
+			
+			JTextArea jta = new JTextArea(output.toString(), 7, 50);
+			JScrollPane jsp = new JScrollPane(jta);
+			jta.setEditable(false);
+			JOptionPane.showMessageDialog(null, jsp);
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}	// end catch
 	}	// searchAllEmp
 	
 	/**
@@ -176,13 +239,11 @@ public class RunStatementDAO {
 				JScrollPane jsp = new JScrollPane(jta);
 				JOptionPane.showMessageDialog(null, jsp);
 			}	// end else
-			
 		} catch (NumberFormatException nfe) {
 			JOptionPane.showMessageDialog(null, "사원번호는 숫자형식으로 입력해야 합니다.");
 		} catch (SQLException se) {
 			se.printStackTrace();
 		}	// end catch
-			
 	}	// searchOneEmp
 	
 	/**

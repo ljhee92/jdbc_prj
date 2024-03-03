@@ -6,6 +6,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 
 import kr.co.sist.statement.vo.EmployeeVO;
@@ -119,9 +120,46 @@ public class StatementDAO {
 	 * 사원정보를 삭제하는 일
 	 * @param empno
 	 * @return 삭제된 건 수
+	 * @throws SQLException 
 	 */
-	public int deleteEmp(int empno) {
+	public int deleteEmp(int empno) throws SQLException {
 		int cnt = 0;
+		// 1. 드라이버 로딩
+		try {
+			Class.forName("oracle.jdbc.OracleDriver");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}	// end catch
+		
+		String url = "jdbc:oracle:thin:@localhost:1521:xe";
+		String id = "scott";
+		String pass = "tiger";
+		
+		Connection con = null;
+		Statement stmt = null;
+		
+		try {
+			// 2. 커넥션 얻기
+			con = DriverManager.getConnection(url, id, pass);
+			
+			// 3. 쿼리문 수행 객체 얻기
+			stmt = con.createStatement();
+			
+			// 4. 쿼리문 수행 후 결과 얻기
+			StringBuilder deleteEmp = new StringBuilder();
+			// delete from employee where empno = xx
+			deleteEmp.append("delete from employee where empno = ").append(empno);
+			
+			cnt = stmt.executeUpdate(deleteEmp.toString());
+		} finally {
+			// 5. 연결 끊기
+			if(stmt != null) {
+				stmt.close();
+			}	// end if
+			if(con != null) {
+				con.close();
+			}	// end if
+		}	// end finally
 		
 		return cnt;
 	}	// deleteEmp
@@ -129,11 +167,66 @@ public class StatementDAO {
 	/**
 	 * 모든 사원정보를 검색하는 일
 	 * @return 모든 사원정보 리스트
+	 * @throws SQLException 
 	 */
-	public List<EmployeeVO> selectAllEmp(){
-		List<EmployeeVO> listEmp = null;
+	public List<EmployeeVO> selectAllEmp() throws SQLException{
+		List<EmployeeVO> listEVO = new ArrayList<EmployeeVO>();
+		// 1. 드라이버 로딩
+		try {
+			Class.forName("oracle.jdbc.OracleDriver");
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}	// end catch
 		
-		return listEmp;
+		String url = "jdbc:oracle:thin:@localhost:1521:xe";
+		String id = "scott";
+		String pass = "tiger";
+
+		Connection con = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		
+		try {
+			// 2. 로딩된 드라이버에서 커넥션 얻기
+			con = DriverManager.getConnection(url, id, pass);
+			
+			// 3. 커넥션에서 쿼리문 수행 객체 얻기
+			stmt = con.createStatement();
+			
+			// 4. 쿼리문 수행 후 결과 얻기
+			String selectAllEmp = "select * from employee";
+			
+			rs = stmt.executeQuery(selectAllEmp);
+			
+			EmployeeVO eVO = null;
+			int empno = 0;
+			String ename = "", job = "";
+			double sal = 0.0;
+			Date hiredate = null;
+			
+			while(rs.next()) {
+				empno = rs.getInt("empno");
+				ename = rs.getString("ename");
+				job = rs.getString("job");
+				sal = rs.getDouble("sal");
+				hiredate = rs.getDate("hiredate");
+				
+				eVO = new EmployeeVO(empno, ename, job, sal, hiredate);
+				listEVO.add(eVO);
+			}	// end while
+		} finally {
+			// 5. 연결 끊기
+			if(rs != null) {
+				rs.close();
+			}	// end if
+			if(stmt != null) {
+				stmt.close();
+			}	// end if
+			if(con != null) {
+				con.close();
+			}	// end if
+		}	// end finally
+		return listEVO;
 	}	//selectAllEmp
 	
 	/**
