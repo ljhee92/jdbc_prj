@@ -89,7 +89,7 @@ public class StatementDAO {
 			// 2. 로딩된 드라이버로부터 커넥션 얻기
 			con = DriverManager.getConnection(url, id, pass);
 			
-			// 3. 커넥션으로부터 쿼리 수행 객체 얻기
+			// 3. 커넥션으로부터 쿼리 생성 객체 얻기
 			stmt = con.createStatement();
 			
 			// 4. 쿼리 수행 후 결과 얻기
@@ -142,7 +142,7 @@ public class StatementDAO {
 			// 2. 커넥션 얻기
 			con = DriverManager.getConnection(url, id, pass);
 			
-			// 3. 쿼리문 수행 객체 얻기
+			// 3. 쿼리문 생성 객체 얻기
 			stmt = con.createStatement();
 			
 			// 4. 쿼리문 수행 후 결과 얻기
@@ -190,7 +190,7 @@ public class StatementDAO {
 			// 2. 로딩된 드라이버에서 커넥션 얻기
 			con = DriverManager.getConnection(url, id, pass);
 			
-			// 3. 커넥션에서 쿼리문 수행 객체 얻기
+			// 3. 커넥션에서 쿼리문 생성 객체 얻기
 			stmt = con.createStatement();
 			
 			// 4. 쿼리문 수행 후 결과 얻기
