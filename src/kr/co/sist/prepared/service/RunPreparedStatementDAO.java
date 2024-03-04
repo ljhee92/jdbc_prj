@@ -1,4 +1,4 @@
-package kr.co.sist.statement.service;
+package kr.co.sist.prepared.service;
 
 import static java.lang.Double.parseDouble;
 import static java.lang.Integer.parseInt;
@@ -12,15 +12,14 @@ import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
-import kr.co.sist.statement.dao.StatementDAO;
+import kr.co.sist.prepared.dao.PreparedStatementDAO;
 import kr.co.sist.statement.vo.EmployeeVO;
 
 
 /**
- * CRUD를 사용한 클래스 <br>
- * StatementDAO를 실행하고, 받아온 데이터를 사용자에게 보여주는 class
+ * CRUD를 사용한 클래스
  */
-public class RunStatementDAO {
+public class RunPreparedStatementDAO {
 	
 	/**
 	 * insert into ~ values 
@@ -36,6 +35,12 @@ public class RunStatementDAO {
 				return;
 			}	// end if
 			
+			// 사원번호는 숫자 4자, 10000 이하 : 유효성 검증
+			if(tempData[0].length() > 4) {
+				JOptionPane.showMessageDialog(null, "사원번호는 0~9999만 입력 가능합니다.");
+				return;
+			}	// end if
+			
 			int empno = parseInt(tempData[0]);
 			String ename = tempData[1];
 			String job = tempData[2];
@@ -46,11 +51,10 @@ public class RunStatementDAO {
 				EmployeeVO eVO = new EmployeeVO(empno, ename, job, sal, null);
 				
 				// DB에 추가
-				StatementDAO sDAO = new StatementDAO();
+				PreparedStatementDAO psDAO = PreparedStatementDAO.getInstance();
 				
-//				System.out.println(eVO.toString());
 				try {
-					sDAO.insertEmp(eVO);
+					psDAO.insertEmp(eVO);
 					JOptionPane.showMessageDialog(null, empno + "번 사원정보가 추가되었습니다.");
 				} catch (SQLException se) {
 					se.printStackTrace();
@@ -89,8 +93,8 @@ public class RunStatementDAO {
 			try {
 				// DBMS 테이블의 update를 수행
 				int empno = parseInt(tempData[0]);
-				StatementDAO sDAO = new StatementDAO();
-				EmployeeVO eVOSelect = sDAO.selectOneEmp(empno);
+				PreparedStatementDAO psDAO = PreparedStatementDAO.getInstance();
+				EmployeeVO eVOSelect = psDAO.selectOneEmp(empno);
 				EmployeeVO eVOInput = null;
 				
 				switch(tempData[1]) {
@@ -105,7 +109,7 @@ public class RunStatementDAO {
 					eVOInput = new EmployeeVO(empno, eVOSelect.getEname(), eVOSelect.getJob(), eVOSelect.getSal(), Date.valueOf(tempData[2])); break;
 				}	// end case 
 				
-				int cnt = sDAO.updateEmp(eVOInput);	// 0 ~ n건 변경
+				int cnt = psDAO.updateEmp(eVOInput);	// 0 ~ n건 변경
 				String msg = "";
 				
 				if(cnt == 0) {	// 변경되지 않았을 때 
@@ -139,7 +143,7 @@ public class RunStatementDAO {
 			JOptionPane.showMessageDialog(null, "사원번호를 입력해주세요.");	
 			return;
 		}	// end if
-
+		
 		// 유효성 검증(사원번호는 숫자 4자리)
 		if(inputData.length() > 4) {
 			JOptionPane.showMessageDialog(null, "사원번호는 숫자 4자리입니다.");
@@ -149,8 +153,8 @@ public class RunStatementDAO {
 		// DBMS의 delete를 수행
 		try {
 			int empno = parseInt(inputData);
-			StatementDAO sDAO = new StatementDAO();
-			EmployeeVO eVO = sDAO.selectOneEmp(empno);
+			PreparedStatementDAO psDAO = PreparedStatementDAO.getInstance();
+			EmployeeVO eVO = psDAO.selectOneEmp(empno);
 			
 			if(eVO == null) {
 				JOptionPane.showMessageDialog(null, empno + "번 사원은 존재하지 않습니다. 사원번호를 확인해주세요.");
@@ -164,7 +168,7 @@ public class RunStatementDAO {
 			case JOptionPane.CANCEL_OPTION :
 				return;
 			case JOptionPane.OK_OPTION :
-				int cnt = sDAO.deleteEmp(empno);
+				int cnt = psDAO.deleteEmp(empno);
 				if(cnt != 0) {
 					JOptionPane.showMessageDialog(null, empno + "번으로 " + cnt + "건 삭제되었습니다.");
 				}	// end if 
@@ -183,9 +187,9 @@ public class RunStatementDAO {
 	 */
 	public void searchAllEmp() {
 		// DBMS에서 조회된 결과를 받아서 사용자에게 보여준다.
-		StatementDAO sDAO = new StatementDAO();
+		PreparedStatementDAO psDAO = PreparedStatementDAO.getInstance();
 		try {
-			List<EmployeeVO> listAllEmp = sDAO.selectAllEmp();
+			List<EmployeeVO> listAllEmp = psDAO.selectAllEmp();
 			
 			StringBuilder output = new StringBuilder();
 			output.append("사원번호\t사원명\t직무\t연봉\t입사일\n");
@@ -194,16 +198,15 @@ public class RunStatementDAO {
 				output.append("데이터가 없습니다.");
 			} else {
 				for(EmployeeVO eVO : listAllEmp) {
-					SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
 					output.append(eVO.getEmpno()).append("\t")
 					.append(eVO.getEname()).append("\t")
 					.append(eVO.getJob()).append("\t")
 					.append(eVO.getSal()).append("\t")
-					.append(sdf.format(eVO.getHiredate())).append("\n");
+					.append(eVO.getHiredate2()).append("\n");
 				}	// end for
 			}	// end else
 			
-			JTextArea jta = new JTextArea(output.toString(), 7, 50);
+			JTextArea jta = new JTextArea(output.toString(), 7, 60);
 			JScrollPane jsp = new JScrollPane(jta);
 			jta.setEditable(false);
 			JOptionPane.showMessageDialog(null, jsp);
@@ -226,8 +229,8 @@ public class RunStatementDAO {
 			int empno = parseInt(inputData);
 			
 			// DBMS에서 조회된 결과를 받아서 사용자에게 보여준다.
-			StatementDAO sDAO = new StatementDAO();
-			EmployeeVO eVO = sDAO.selectOneEmp(empno);
+			PreparedStatementDAO psDAO = PreparedStatementDAO.getInstance();
+			EmployeeVO eVO = psDAO.selectOneEmp(empno);
 			
 			StringBuilder output = new StringBuilder();
 			output.append(empno).append("번 사원번호 검색 결과\n\n");
@@ -238,9 +241,10 @@ public class RunStatementDAO {
 				output.append("직무 : ").append(eVO.getJob()).append("\n");
 				output.append("연봉 : ").append(eVO.getSal()).append("\n");
 				SimpleDateFormat sdf = new SimpleDateFormat("MM-dd-yyyy");
-				output.append("입사일 : ").append(sdf.format(eVO.getHiredate()));
+				output.append("입사일 : ").append(sdf.format(eVO.getHiredate())).append("\n");
+				output.append("입사일2: ").append(eVO.getHiredate2());
 				
-				JTextArea jta = new JTextArea(output.toString(), 7, 30);
+				JTextArea jta = new JTextArea(output.toString(), 8, 30);
 				jta.setEditable(false);
 				JScrollPane jsp = new JScrollPane(jta);
 				JOptionPane.showMessageDialog(null, jsp);
@@ -261,7 +265,7 @@ public class RunStatementDAO {
 		int exitMenu = 0;
 		
 		do {
-			inputMenu = JOptionPane.showInputDialog("메뉴 선택\n1. 사원정보 추가\n2. 사원정보 변경"
+			inputMenu = JOptionPane.showInputDialog("PreparedStatement 메뉴 선택\n1. 사원정보 추가\n2. 사원정보 변경"
 					+ "\n3. 사원정보 삭제\n4. 전체 사원정보 검색\n5. 특정 사원정보 검색\n6. 종료");
 			
 			if(inputMenu != null) {
@@ -285,7 +289,7 @@ public class RunStatementDAO {
 	}	// menu
 
 	public static void main(String[] args) {
-		RunStatementDAO rsDAO = new RunStatementDAO();
+		RunPreparedStatementDAO rsDAO = new RunPreparedStatementDAO();
 		rsDAO.menu();
 	}	// main
 
