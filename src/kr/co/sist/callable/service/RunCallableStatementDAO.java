@@ -137,8 +137,8 @@ public class RunCallableStatementDAO {
 		// DBMS의 delete를 수행
 		try {
 			int empno = parseInt(inputData);
-			PreparedStatementDAO psDAO = PreparedStatementDAO.getInstance();
-			EmployeeVO eVO = psDAO.selectOneEmp(empno);
+			CallableStatementDAO csDAO = CallableStatementDAO.getInstance();
+			EmployeeVO eVO = csDAO.selectOneEmp(empno);
 			
 			if(eVO == null) {
 				JOptionPane.showMessageDialog(null, empno + "번 사원은 존재하지 않습니다. 사원번호를 확인해주세요.");
@@ -152,10 +152,8 @@ public class RunCallableStatementDAO {
 			case JOptionPane.CANCEL_OPTION :
 				return;
 			case JOptionPane.OK_OPTION :
-				int cnt = psDAO.deleteEmp(empno);
-				if(cnt != 0) {
-					JOptionPane.showMessageDialog(null, empno + "번으로 " + cnt + "건 삭제되었습니다.");
-				}	// end if 
+				ResultVO rVO = csDAO.deleteEmp(empno);
+				JOptionPane.showMessageDialog(null, rVO.getErrMsg());
 				break;
 			}	// end case
 		} catch (NumberFormatException nfe) {

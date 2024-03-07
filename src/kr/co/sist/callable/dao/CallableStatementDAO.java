@@ -92,6 +92,36 @@ public class CallableStatementDAO {
 		return rVO;
 	}	// updateEmp
 	
+	public ResultVO deleteEmp(int empno) throws SQLException {
+		ResultVO rVO = null;
+		DbConnection dbCon = DbConnection.getInstance();
+		
+		Connection con = null;
+		CallableStatement cstmt = null;
+		
+		try {
+			String id = "scott";
+			String pass = "tiger";
+			con = dbCon.getConnection(id, pass);
+			
+			cstmt = con.prepareCall("{call delete_employee(?, ?, ?)}");
+			
+			// in parameter
+			cstmt.setInt(1, empno);
+			
+			// out parameter
+			cstmt.registerOutParameter(2, Types.NUMERIC);
+			cstmt.registerOutParameter(3, Types.VARCHAR);
+			
+			cstmt.execute();
+			
+			rVO = new ResultVO(cstmt.getInt(2), cstmt.getString(3));
+		} finally {
+			dbCon.dbClose(null, cstmt, con);
+		}	// end finally
+		return rVO;
+	}	// deleteEmp
+	
 	public EmployeeVO selectOneEmp(int empno) throws SQLException {
 		EmployeeVO eVO = null;
 		DbConnection dbCon = DbConnection.getInstance();
