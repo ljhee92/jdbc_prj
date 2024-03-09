@@ -5,10 +5,13 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
 
 import kr.co.sist.dao.DbConnection;
 import kr.co.sist.statement.vo.EmployeeVO;
 import kr.co.sist.vo.ResultVO;
+import oracle.jdbc.OracleTypes;
 
 public class CallableStatementDAO {
 	
@@ -121,6 +124,37 @@ public class CallableStatementDAO {
 		}	// end finally
 		return rVO;
 	}	// deleteEmp
+	
+	public List<EmployeeVO> selectAllEmp() throws SQLException {
+		List<EmployeeVO> employees = new ArrayList<EmployeeVO>();
+		DbConnection dbCon = DbConnection.getInstance();
+		
+		Connection con = null;
+		CallableStatement cstmt = null;
+		ResultSet rs = null;
+		
+		try {
+			String id = "scott";
+			String pass = "tiger";
+			con = dbCon.getConnection(id, pass);
+			
+			cstmt = con.prepareCall("{call select_all_employee(?)}");
+			cstmt.registerOutParameter(1, OracleTypes.CURSOR);
+			cstmt.execute();
+			
+			rs = (ResultSet) cstmt.getObject(1);
+			
+			EmployeeVO eVO = null;
+			while(rs.next()) {
+				eVO = new EmployeeVO(rs.getInt("empno"), rs.getString("ename"),
+						rs.getString("job"), rs.getDouble("sal"), null, rs.getString("hiredate2"));
+				employees.add(eVO);
+			}	// end while
+		} finally {
+			dbCon.dbClose(rs, cstmt, con);
+		}	// end finally
+		return employees;
+	}	// selectAllEmp
 	
 	public EmployeeVO selectOneEmp(int empno) throws SQLException {
 		EmployeeVO eVO = null;

@@ -13,7 +13,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import kr.co.sist.callable.dao.CallableStatementDAO;
-import kr.co.sist.prepared.dao.PreparedStatementDAO;
 import kr.co.sist.statement.vo.EmployeeVO;
 import kr.co.sist.vo.ResultVO;
 
@@ -169,17 +168,17 @@ public class RunCallableStatementDAO {
 	 */
 	public void searchAllEmp() {
 		// DBMS에서 조회된 결과를 받아서 사용자에게 보여준다.
-		PreparedStatementDAO psDAO = PreparedStatementDAO.getInstance();
+		CallableStatementDAO csDAO = CallableStatementDAO.getInstance();
 		try {
-			List<EmployeeVO> listAllEmp = psDAO.selectAllEmp();
+			List<EmployeeVO> employees = csDAO.selectAllEmp();
 			
 			StringBuilder output = new StringBuilder();
-			output.append("사원번호\t사원명\t직무\t연봉\t입사일\n");
+			output.append("Callable조회결과\n사원번호\t사원명\t직무\t연봉\t입사일\n");
 			
-			if(listAllEmp.isEmpty()) {
+			if(employees.isEmpty()) {
 				output.append("데이터가 없습니다.");
 			} else {
-				for(EmployeeVO eVO : listAllEmp) {
+				for(EmployeeVO eVO : employees) {
 					output.append(eVO.getEmpno()).append("\t")
 					.append(eVO.getEname()).append("\t")
 					.append(eVO.getJob()).append("\t")
@@ -188,7 +187,7 @@ public class RunCallableStatementDAO {
 				}	// end for
 			}	// end else
 			
-			JTextArea jta = new JTextArea(output.toString(), 7, 60);
+			JTextArea jta = new JTextArea(output.toString(), 7, 40);
 			JScrollPane jsp = new JScrollPane(jta);
 			jta.setEditable(false);
 			JOptionPane.showMessageDialog(null, jsp);
